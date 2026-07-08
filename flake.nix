@@ -14,10 +14,10 @@
         in {
           default = pkgs.stdenvNoCC.mkDerivation {
             pname = "mcrl";
-            version = "1.3.0";
+            version = "1.3.3";
             src = pkgs.fetchurl {
-              url = "https://github.com/Sm0keSkreen/mcrl/releases/download/v1.3.0/mcrl.jar";
-              hash = "sha256-Wu9Fgi2Gsq34zPrh4By3gLwid44i03tGpCoAX4eK2a0=";
+              url = "https://github.com/Sm0keSkreen/mcrl/releases/download/v1.3.3/mcrl.jar";
+              hash = "sha256-g4aDTcfN0n+XzriThl+18WJqTSxNp0uA/0RS398+HCA=";
             };
             dontUnpack = true;
             installPhase = ''
