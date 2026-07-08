@@ -33,15 +33,45 @@
           };
         });
 
-      # Sets JDK_JAVA_OPTIONS for home-manager users; `home-manager switch` after bumping this
-      # flake input is the whole "upgrade" step, since the store path is fixed per generation.
-      homeManagerModules.default = { config, lib, pkgs, ... }: {
-        options.programs.mcrl.enable = lib.mkEnableOption "mcrl (lifts Minecraft's chat restriction)";
-        config = lib.mkIf config.programs.mcrl.enable {
-          home.packages = [ self.packages.${pkgs.system}.default ];
-          home.sessionVariables.JDK_JAVA_OPTIONS =
-            ''-javaagent:"${self.packages.${pkgs.system}.default}/share/mcrl/mcrl.jar"'';
+      # config.json has to live in the same directory as the jar (that's how McrlConfig finds
+      # it), but the jar itself lives in the read-only, immutable Nix store, so config.json can't
+      # go there. Instead this symlinks the jar into a normal per-user path and writes
+      # config.json declaratively next to that symlink; `home-manager switch` after bumping this
+      # flake input or changing any programs.mcrl.* option is the whole "apply" step.
+      homeManagerModules.default = { config, lib, pkgs, ... }:
+        let
+          cfg = config.programs.mcrl;
+          jarStorePath = "${self.packages.${pkgs.system}.default}/share/mcrl/mcrl.jar";
+          installedJarPath = "${config.home.homeDirectory}/.local/share/mcrl/mcrl.jar";
+        in {
+          options.programs.mcrl = {
+            enable = lib.mkEnableOption "mcrl (lifts Minecraft's chat restriction)";
+            extras = lib.mkOption {
+              type = lib.types.bool;
+              default = false;
+              description = "Also unlock Realms, the multiplayer server list, and friends where the account API supports it.";
+            };
+            allowTelemetry = lib.mkOption {
+              type = lib.types.nullOr lib.types.bool;
+              default = null;
+              description = "true/false to force telemetry on/off; null (default) leaves the account's existing setting alone.";
+            };
+            allowProfanityFilter = lib.mkOption {
+              type = lib.types.nullOr lib.types.bool;
+              default = null;
+              description = "true/false to force the in-game chat profanity filter on/off; null (default) leaves the account's existing setting alone.";
+            };
+          };
+
+          config = lib.mkIf cfg.enable {
+            home.file.".local/share/mcrl/mcrl.jar".source = jarStorePath;
+            home.file.".local/share/mcrl/config.json".text = builtins.toJSON {
+              extras = cfg.extras;
+              allowTelemetry = cfg.allowTelemetry;
+              allowProfanityFilter = cfg.allowProfanityFilter;
+            };
+            home.sessionVariables.JDK_JAVA_OPTIONS = ''-javaagent:"${installedJarPath}"'';
+          };
         };
-      };
     };
 }

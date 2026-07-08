@@ -23,15 +23,23 @@ home-manager module below, which does that for you.
     homeConfigurations.you = home-manager.lib.homeManagerConfiguration {
       modules = [
         mcrl.homeManagerModules.default
-        { programs.mcrl.enable = true; }
+        {
+          programs.mcrl = {
+            enable = true;
+            extras = true;                # Realms/servers/friends; default false
+            allowTelemetry = false;        # true/false forces it; default null = leave alone
+            allowProfanityFilter = false;  # same
+          };
+        }
       ];
     };
   };
 }
 ```
 
-`home-manager switch` after bumping this flake's input is the whole upgrade step; the
-jar's path only changes with the generation, not on every rebuild, so once
-`JDK_JAVA_OPTIONS` is set there's nothing else to redo. Doesn't cover the
-Realms/telemetry/profanity extras (those need `config.json`, not currently wired up
-through this module); run the full installer once for that if you want them.
+`home-manager switch` after bumping this flake's input, or after changing any
+`programs.mcrl.*` option, is the whole apply/upgrade step. `config.json` is generated
+declaratively from `extras`/`allowTelemetry`/`allowProfanityFilter` (all optional;
+`allowTelemetry`/`allowProfanityFilter` default to `null`, meaning leave the account's
+existing setting alone rather than force it either way), so there's no separate script
+to run for the Realms/telemetry/profanity extras, unlike the other package managers.
